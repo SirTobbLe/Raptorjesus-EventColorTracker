@@ -6,7 +6,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Raptorjesus - EventColorTracker</title>
-    <link rel="apple-touch-icon" href="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=">
+    
+    <!-- Relativer Pfad für iOS Homescreen Icon -->
+    <link rel="apple-touch-icon" href="logo.jpg">
+    <link rel="icon" href="logo.jpg">
+
     <style>
         :root {
             --bg-main: #0F1115;
@@ -16,64 +20,82 @@
             --text-primary: #F0F2F5;
             --text-secondary: #8C96A6;
             --accent-main: #FFB000;
-            --accent-glow: rgba(255, 176, 0, 0.2);
+            --accent-glow: rgba(255, 176, 0, 0.25);
             --accent-red: #FF4D4D;
+            --card-radius: 12px;
+            --header-bg: var(--bg-main);
         }
 
-        /* Theme: Cyan / Black */
+        /* --- THEME: Cyan / Black (ARK HUD Style) --- */
         body.theme-cyan-black {
-            --bg-main: #0b0d10;
-            --bg-card: #12151c;
-            --bg-card-alt: #1a1e28;
-            --border-color: #00FFFF33;
+            --bg-main: #171717;
+            --bg-card: #0D0F12;
+            --bg-card-alt: #141820;
+            --border-color: #00FFFF55;
             --text-primary: #E6F8F8;
-            --text-secondary: #7EA8A8;
-            --accent-main: #00FFFF;
-            --accent-glow: rgba(0, 255, 255, 0.25);
-        }
-
-        /* Theme: Purple / Black */
-        body.theme-purple-black {
-            --bg-main: #0e0b14;
-            --bg-card: #151120;
-            --bg-card-alt: #1e182c;
-            --border-color: #7F00FF44;
-            --text-primary: #F2ECFA;
-            --text-secondary: #9B8BA8;
-            --accent-main: #7F00FF;
-            --accent-glow: rgba(127, 0, 255, 0.3);
-        }
-
-        /* Theme: White / Cyan / Magenta */
-        body.theme-white-neon {
-            --bg-main: #F4F6F9;
-            --bg-card: #FFFFFF;
-            --bg-card-alt: #E9ECEF;
-            --border-color: #D1D5DB;
-            --text-primary: #1F2937;
-            --text-secondary: #4B5563;
+            --text-secondary: #6B8E8E;
             --accent-main: #00FFFF;
             --accent-glow: rgba(0, 255, 255, 0.4);
+            --card-radius: 4px;
         }
+
+        /* --- THEME: Purple / Black (Knalliges Neon-Purple auf Tiefschwarz) --- */
+        body.theme-purple-black {
+            --bg-main: #171717;
+            --bg-card: #0D0C10;
+            --bg-card-alt: #15121C;
+            --border-color: #7F00FF66;
+            --text-primary: #F5EFFF;
+            --text-secondary: #7F7393;
+            --accent-main: #7F00FF;
+            --accent-glow: rgba(127, 0, 255, 0.5);
+            --card-radius: 4px;
+        }
+
+        /* --- THEME: White / Cyan / Magenta (Soft White mit Neon-Fading Header) --- */
+        body.theme-white-neon {
+            --bg-main: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --bg-card-alt: #EDF2F7;
+            --border-color: #CBD5E1;
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
+            --accent-main: #FF00FF;
+            --accent-glow: rgba(255, 0, 255, 0.3);
+            --card-radius: 6px;
+        }
+
+        body.theme-white-neon header {
+            background: linear-gradient(90deg, rgba(255,0,255,0.12) 0%, rgba(255,255,255,1) 50%, rgba(0,255,255,0.12) 100%);
+            border-bottom: 2px solid #FF00FF88;
+        }
+
+        body.theme-white-neon .id-badge {
+            color: #D946EF !important;
+            background: #FDF4FF !important;
+            border-color: #F0ABFC !important;
+        }
+
         body.theme-white-neon input[type="text"], 
         body.theme-white-neon select {
             background: #FFFFFF !important;
-            color: #1F2937 !important;
+            color: #0F172A !important;
+            border-color: #CBD5E1;
         }
-        body.theme-white-neon .id-badge {
-            color: #0E7490 !important;
-            background: #E0F2FE !important;
-            border-color: #BAE6FD !important;
+
+        /* Gaming ARK HUD-Effekte für Themes */
+        body.theme-cyan-black .color-card,
+        body.theme-purple-black .color-card {
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 0 6px var(--accent-glow);
         }
-        body.theme-white-neon .region-btn {
-            background: #FFFFFF;
-            color: #4B5563;
-            border-color: #D1D5DB;
-        }
-        body.theme-white-neon .region-btn.active-custom {
-            background-color: #FF00FF !important;
-            color: #FFFFFF !important;
-            border-color: #FF00FF !important;
+
+        body.theme-cyan-black .btn,
+        body.theme-purple-black .btn {
+            border-radius: 2px;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
         }
 
         * {
@@ -92,11 +114,11 @@
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
             min-height: 100vh;
-            transition: background 0.3s ease, color 0.3s ease;
+            transition: background 0.25s ease, color 0.25s ease;
         }
 
         header {
-            background: var(--bg-main);
+            background: var(--header-bg);
             padding: 16px;
             border-bottom: 1px solid var(--border-color);
             margin-bottom: 12px;
@@ -129,6 +151,7 @@
             border: 2px solid var(--accent-main);
             box-shadow: 0 0 12px var(--accent-glow);
             flex-shrink: 0;
+            background-color: var(--bg-card);
         }
 
         .tbl-badge {
@@ -140,7 +163,7 @@
             font-size: 0.65rem;
             font-weight: 800;
             padding: 2px 6px;
-            border-radius: 6px;
+            border-radius: 4px;
             border: 1px solid var(--bg-main);
             box-shadow: 0 2px 4px rgba(0,0,0,0.5);
             z-index: 10;
@@ -158,7 +181,7 @@
             font-size: 0.75rem;
             background: var(--bg-card-alt);
             padding: 4px 8px;
-            border-radius: 12px;
+            border-radius: 8px;
             color: var(--accent-main);
             border: 1px solid var(--accent-glow);
         }
@@ -180,7 +203,7 @@
             border: 1px solid var(--border-color);
             color: var(--text-primary);
             padding: 10px 12px;
-            border-radius: 10px;
+            border-radius: var(--card-radius);
             font-size: 0.85rem;
             outline: none;
             width: 100%;
@@ -254,7 +277,7 @@
             border: 1px solid var(--border-color);
             color: var(--text-primary);
             padding: 10px 14px;
-            border-radius: 10px;
+            border-radius: var(--card-radius);
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
@@ -303,7 +326,7 @@
         .color-card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: var(--card-radius);
             padding: 12px;
             display: flex;
             flex-direction: column;
@@ -325,7 +348,7 @@
         .id-badge {
             background: var(--bg-card-alt);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 4px 8px;
             font-size: 0.75rem;
             font-weight: 700;
@@ -353,7 +376,7 @@
 
         .region-btn {
             height: 38px;
-            border-radius: 8px;
+            border-radius: calc(var(--card-radius) - 4px);
             border: 1px solid var(--border-color);
             background: var(--bg-card-alt);
             color: var(--text-secondary);
@@ -377,11 +400,8 @@
         .modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.8);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
             backdrop-filter: blur(8px);
             z-index: 200;
             align-items: center;
@@ -392,7 +412,7 @@
         .modal-content {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
+            border-radius: var(--card-radius);
             padding: 20px;
             width: 100%;
             max-width: 400px;
@@ -413,7 +433,7 @@
             background: var(--bg-card-alt);
             border: 1px solid var(--border-color);
             padding: 10px;
-            border-radius: 8px;
+            border-radius: var(--card-radius);
             text-align: center;
             font-size: 0.85rem;
             font-weight: 600;
@@ -431,7 +451,7 @@
             overflow-y: auto;
             background: var(--bg-card-alt);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: var(--card-radius);
             padding: 4px;
             display: flex;
             flex-direction: column;
@@ -471,7 +491,7 @@
             <div class="logo-title-container">
                 <div class="logo-wrapper">
                     <span class="tbl-badge">[TbL]</span>
-                    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=" alt="Raptorjesus Logo" class="logo-img" id="logoImg">
+                    <img src="logo.jpg" alt="Raptorjesus Logo" class="logo-img" id="logoImg" onerror="this.style.display='none'">
                 </div>
                 <h1>Raptorjesus<br><span style="font-size:0.8rem; color:var(--text-secondary);">EventColorTracker</span></h1>
             </div>
@@ -490,8 +510,8 @@
         <div class="controls-grid" style="margin-bottom: 6px;">
             <select id="themeSelect" onchange="changeTheme(this.value)">
                 <option value="default">🎨 Theme: Default</option>
-                <option value="cyan-black">⚡ Theme: Cyan / Black</option>
-                <option value="purple-black">🔮 Theme: Purple / Black</option>
+                <option value="cyan-black">⚡ Theme: Cyan / Black (HUD)</option>
+                <option value="purple-black">🔮 Theme: Purple / Black (Neon)</option>
                 <option value="white-neon">❄️ Theme: White / Cyan / Magenta</option>
             </select>
             <button class="btn" style="width:100%; font-size:0.8rem;" onclick="openModal()">+ Manage Dinos</button>
@@ -550,9 +570,6 @@
     </div>
 
     <script>
-        const stickerData = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=";
-        document.getElementById('logoImg').src = stickerData;
-
         const arkColors = [
             {id: 1, name: "Red", hex: "#FF0000"},
             {id: 2, name: "Blue", hex: "#0000FF"},
@@ -833,11 +850,15 @@
                     if (!isActive) {
                         regionsHtml += `<div class="region-btn disabled">R${r}</div>`;
                     } else {
-                        let activeClass = isChecked ? (currentTheme === 'white-neon' ? ' active-custom' : '') : '';
-                        const style = isChecked && currentTheme !== 'white-neon'
-                            ? `background-color: ${c.hex}; color: ${getTextColor(c.hex)}; border-color: ${c.hex}; box-shadow: 0 0 8px ${c.hex}66;` 
-                            : (isChecked && currentTheme === 'white-neon' ? `border-color: #FF00FF; box-shadow: 0 0 6px rgba(255,0,255,0.4);` : '');
-                        regionsHtml += `<div class="region-btn${activeClass}" style="${style}" onclick="toggleRegion(${c.id}, ${r})">R${r}</div>`;
+                        let style = '';
+                        if (isChecked) {
+                            if (currentTheme === 'white-neon') {
+                                style = `background-color: #FF00FF; color: #FFFFFF; border-color: #00FFFF; box-shadow: 0 0 10px rgba(255,0,255,0.5);`;
+                            } else {
+                                style = `background-color: ${c.hex}; color: ${getTextColor(c.hex)}; border-color: ${c.hex}; box-shadow: 0 0 10px ${c.hex}88;`;
+                            }
+                        }
+                        regionsHtml += `<div class="region-btn" style="${style}" onclick="toggleRegion(${c.id}, ${r})">R${r}</div>`;
                     }
                 }
 
