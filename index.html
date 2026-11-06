@@ -7,7 +7,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Raptorjesus - EventColorTracker</title>
     
-    <!-- Exakter Dateiname mit .jpeg für iOS Homescreen Icon -->
     <link rel="apple-touch-icon" href="Logo.jpeg">
     <link rel="icon" href="Logo.jpeg">
 
@@ -488,7 +487,6 @@
             <div class="logo-title-container">
                 <div class="logo-wrapper">
                     <span class="tbl-badge">[TbL]</span>
-                    <!-- Greift exakt auf Logo.jpeg zu -->
                     <img src="Logo.jpeg" alt="Raptorjesus Logo" class="logo-img" id="logoImg">
                 </div>
                 <h1>Raptorjesus<br><span style="font-size:0.8rem; color:var(--text-secondary);">EventColorTracker</span></h1>
@@ -761,7 +759,7 @@
                 const isActive = activeEventFilterIds === ef.ids;
                 html += `
                     <div class="event-chip ${isActive ? 'active' : ''}">
-                        <span onclick="applyEventFilter('${ef.ids}')">⭐ ${ef.name}</span>
+                        <span onclick="applyEventFilter('${ef.ids}')">${ef.name}</span>
                         <span style="opacity: 0.5; margin-left: 4px; cursor: pointer;" onclick="deleteEventFilter(${index})">✕</span>
                     </div>
                 `;
