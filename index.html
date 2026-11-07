@@ -626,7 +626,6 @@
             <h3 id="modalTitle">Add Dino Preset</h3>
             
             <div id="dinoFormSection">
-                <!-- KI-Scan Button direkt im Add/Edit Menü -->
                 <div style="margin-bottom: 12px;">
                     <button class="btn btn-cyan-accent" style="width:100%; font-size:0.85rem;" onclick="document.getElementById('aiScanInput').click()">Screenshot mit KI einlesen</button>
                     <input type="file" id="aiScanInput" accept="image/*" capture="environment" style="display:none;" onchange="runAiScan(event)">
@@ -1012,7 +1011,7 @@
             return { checked, total };
         }
 
-        /* --- KI SCAN MIT ZWISCHENSCHRITT --- */
+        /* --- KI SCAN MIT ROBUSTER PARSIERUNG --- */
         async function runAiScan(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1028,7 +1027,7 @@ Extract:
 1. The Dino Species name (e.g., Pyromane, Therizinosaur, Rex, Giga).
 2. The 6 Color Region IDs displayed in the colored squares/numbers near the bottom (Region 0 to Region 5). If empty or 0, return 0.
 
-Respond strictly in valid JSON format with no extra markdown formatting:
+Respond strictly in valid JSON format with no extra markdown formatting or backticks:
 {
   "dino": "DinoName",
   "regions": [ID_R0, ID_R1, ID_R2, ID_R3, ID_R4, ID_R5]
@@ -1049,25 +1048,36 @@ Respond strictly in valid JSON format with no extra markdown formatting:
                     });
 
                     const data = await response.json();
+                    
+                    if (!data.candidates || !data.candidates[0].content) {
+                        throw new Error("Keine Antwort von der KI erhalten.");
+                    }
+
                     let rawText = data.candidates[0].content.parts[0].text;
-                    rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+                    
+                    // Bereinige Markdown-Codeblöcke absolut zuverlässig
+                    rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                    const firstBrace = rawText.indexOf('{');
+                    const lastBrace = rawText.lastIndexOf('}');
+                    if (firstBrace !== -1 && lastBrace !== -1) {
+                        rawText = rawText.substring(firstBrace, lastBrace + 1);
+                    }
 
                     const parsed = JSON.parse(rawText);
                     
-                    // Schließe das Add-Dino Modal und öffne den Bestätigungs-Zwischenschritt
                     document.getElementById('dinoModal').style.display = 'none';
                     
                     document.getElementById('confirmDinoName').value = parsed.dino || "Pyromane";
                     const regions = parsed.regions || [0,0,0,0,0,0];
                     for(let i=0; i<6; i++) {
-                        document.getElementById(`confR${i}`).value = regions[i] !== undefined ? regions[i] : 0;
+                        document.getElementById(`confR${i}`).value = (regions[i] !== undefined && !isNaN(regions[i])) ? regions[i] : 0;
                     }
 
                     document.getElementById('scanConfirmModal').style.display = 'flex';
 
                 } catch (err) {
-                    console.error(err);
-                    alert("Fehler bei der KI-Bildanalyse. Bitte versuche es erneut.");
+                    console.error("AI Scan Error:", err);
+                    alert("Fehler bei der KI-Bildanalyse. Bitte versuche es erneut mit einem klareren Bild.");
                 }
             };
             reader.readAsDataURL(file);
