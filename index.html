@@ -56,12 +56,12 @@
             border: 1px solid rgba(127, 0, 255, 0.25);
         }
 
-        /* --- THEME: White / Cyan / Magenta (Fading: Links Cyan, Mitte Weiß, Rechts Magenta) --- */
+        /* --- THEME: White / Cyan / Magenta --- */
         body.theme-white-neon {
             background: linear-gradient(90deg, rgba(0,255,255,0.2) 0%, rgba(255,255,255,1) 50%, rgba(255,0,255,0.2) 100%) fixed !important;
             --bg-main: transparent;
-            --bg-card: #FFFFFF;
-            --bg-card-alt: #F1F5F9;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-card-alt: rgba(241, 245, 249, 0.85);
             --border-color: #CBD5E1;
             --text-primary: #0F172A;
             --text-secondary: #475569;
@@ -71,7 +71,7 @@
         }
 
         body.theme-white-neon header {
-            background: rgba(255, 255, 255, 0.85);
+            background: transparent !important;
             backdrop-filter: blur(10px);
             border-bottom: 2px solid #FF00FF66;
         }
@@ -81,10 +81,17 @@
             backdrop-filter: blur(6px);
         }
 
-        body.theme-white-neon .id-badge {
-            color: #D946EF !important;
-            background: #FDF4FF !important;
-            border-color: #F0ABFC !important;
+        /* Standard Fokus bleibt Magenta (für ID-Suche und Selects) */
+        body.theme-white-neon input[type="text"]:focus, 
+        body.theme-white-neon select:focus {
+            border-color: var(--accent-main);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        /* Spezieller Fokus nur für das Dino-Suchfeld in Cyan */
+        body.theme-white-neon #dinoSearchInput:focus {
+            border-color: #00FFFF !important;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
         }
 
         body.theme-white-neon input[type="text"], 
@@ -671,11 +678,11 @@
                 document.body.classList.add(`theme-${theme}`);
             }
             document.getElementById('themeSelect').value = theme;
+            renderList();
         }
 
         function changeTheme(theme) {
             applyTheme(theme);
-            renderList();
         }
 
         applyTheme(currentTheme);
@@ -833,7 +840,7 @@
                         let style = '';
                         if (isChecked) {
                             if (currentTheme === 'white-neon') {
-                                style = `background-color: #FF00FF; color: #FFFFFF; border-color: #00FFFF; box-shadow: 0 0 8px rgba(255,0,255,0.4);`;
+                                style = `background-color: ${c.hex}; color: ${getTextColor(c.hex)}; border-color: ${c.hex}; box-shadow: 0 0 8px ${c.hex}88;`;
                             } else {
                                 style = `background-color: ${c.hex}; color: ${getTextColor(c.hex)}; border-color: ${c.hex}; box-shadow: 0 0 8px ${c.hex}66;`;
                             }
@@ -842,10 +849,18 @@
                     }
                 }
 
+                let badgeStyle = '';
+                if (currentTheme === 'white-neon') {
+                    const accentColor = (c.id % 2 === 0) ? '#00FFFF' : '#FF00FF';
+                    const textColor = (c.id % 2 === 0) ? '#0891B2' : '#C026D3';
+                    const bgAccent = (c.id % 2 === 0) ? 'rgba(0, 255, 255, 0.15)' : 'rgba(255, 0, 255, 0.15)';
+                    badgeStyle = `color: ${textColor} !important; background: ${bgAccent} !important; border-color: ${accentColor} !important;`;
+                }
+
                 card.innerHTML = `
                     <div class="color-header">
                         <div class="color-left">
-                            <span class="id-badge">ID ${c.id}</span>
+                            <span class="id-badge" style="${badgeStyle}">ID ${c.id}</span>
                             <div class="color-dot" style="background:${c.hex}"></div>
                             <div class="color-name">${c.name}</div>
                         </div>
@@ -859,6 +874,15 @@
             document.getElementById('statsBadge').innerText = `${checkedCount} / ${totalAvailable}`;
             const pct = totalAvailable > 0 ? (checkedCount / totalAvailable) * 100 : 0;
             document.getElementById('progressBar').style.width = `${pct}%`;
+            
+            const statsEl = document.getElementById('statsBadge');
+            if (currentTheme === 'white-neon') {
+                statsEl.style.color = '#FF00FF';
+                statsEl.style.borderColor = 'rgba(255, 0, 255, 0.4)';
+            } else {
+                statsEl.style.color = '';
+                statsEl.style.borderColor = '';
+            }
         }
 
         function toggleRegion(id, r) {
