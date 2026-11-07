@@ -10,9 +10,6 @@
     <link rel="apple-touch-icon" href="Logo.jpeg">
     <link rel="icon" href="Logo.jpeg">
 
-    <!-- Tesseract.js für automatische Ingame-Texterkennung -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
     <style>
         :root {
             --bg-main: #0F1115;
@@ -268,7 +265,7 @@
             position: relative;
         }
 
-        input[type="text"], select {
+        input[type="text"], select, input[type="number"] {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             color: var(--text-primary);
@@ -279,7 +276,7 @@
             width: 100%;
         }
 
-        input[type="text"]:focus, select:focus {
+        input[type="text"]:focus, select:focus, input[type="number"]:focus {
             border-color: var(--accent-main);
             box-shadow: 0 0 8px var(--accent-glow);
         }
@@ -595,10 +592,6 @@
             </div>
             <div class="header-actions">
                 <span class="stats-badge" id="statsBadge">0 / 600</span>
-                <!-- Auto-Scan Button für OCR -->
-                <button class="icon-btn" onclick="document.getElementById('autoScanInput').click()" title="Ingame Screenshot automatisch scannen">Auto-Scan</button>
-                <input type="file" id="autoScanInput" accept="image/*" capture="environment" style="display:none;" onchange="runAutoScan(event)">
-                
                 <button class="icon-btn" onclick="openSettingsModal()" title="Settings">&#9776;</button>
             </div>
         </div>
@@ -627,12 +620,18 @@
 
     <div class="list-container" id="colorList"></div>
 
-    <!-- MODAL: DINO PRESETS -->
+    <!-- MODAL: DINO PRESETS & AI SCAN -->
     <div class="modal" id="dinoModal">
         <div class="modal-content">
             <h3 id="modalTitle">Add Dino Preset</h3>
             
             <div id="dinoFormSection">
+                <!-- KI-Scan Button direkt im Add/Edit Menü -->
+                <div style="margin-bottom: 12px;">
+                    <button class="btn btn-cyan-accent" style="width:100%; font-size:0.85rem;" onclick="document.getElementById('aiScanInput').click()">Screenshot mit KI einlesen</button>
+                    <input type="file" id="aiScanInput" accept="image/*" capture="environment" style="display:none;" onchange="runAiScan(event)">
+                </div>
+
                 <input type="text" id="newDinoName" placeholder="Dino Name (e.g. Rex, Giga)" style="margin-bottom: 10px;">
                 
                 <div>
@@ -661,6 +660,36 @@
             </div>
 
             <button class="btn" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <!-- MODAL: KI BESTÄTIGUNGS-ZWISCHENSCHRITT -->
+    <div class="modal" id="scanConfirmModal">
+        <div class="modal-content">
+            <h3>KI-Scan Überprüfung</h3>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">Prüfe die erkannten Werte und korrigiere sie bei Bedarf vor dem Speichern:</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label style="font-size: 0.75rem; color: var(--text-secondary);">Erkannter Dino:</label>
+                <input type="text" id="confirmDinoName">
+            </div>
+
+            <div>
+                <label style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px; display: block;">Erkannte Farb-IDs (Regionen R0 - R5):</label>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                    <div><span style="font-size:0.65rem; color:var(--text-secondary);">R0</span><input type="number" id="confR0" min="0" max="100"></div>
+                    <div><span style="font-size:0.65rem; color:var(--text-secondary);">R1</span><input type="number" id="confR1" min="0" max="100"></div>
+                    <div><span style="font-size:0.65rem; color:var(--text-secondary);">R2</span><input type="number" id="confR2" min="0" max="100"></div>
+                    <div><span style="font-size:0.65rem; color:var(--text-secondary);">R3</span><input type="number" id="confR3" min="0" max="100"></div>
+                    <div><span style="font-size:0.65rem; color:var(--text-secondary);">R4</span><input type="number" id="confR4" min="0" max="100"></div>
+                    <div><span style="font-size:0.65rem; color:var(--text-secondary);">R5</span><input type="number" id="confR5" min="0" max="100"></div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                <button class="btn btn-primary" style="flex:1;" onclick="applyScanConfirmation()">Übernehmen & Speichern</button>
+                <button class="btn btn-danger" onclick="document.getElementById('scanConfirmModal').style.display='none'">Abbrechen</button>
+            </div>
         </div>
     </div>
 
@@ -702,6 +731,8 @@
     </div>
 
     <script>
+        const GEMINI_API_KEY = "AQ.Ab8RN6IsCNJKXV-yZTCQOtHKlUHp3TFkxhfifPdO8nLuO5P7NA";
+
         const arkColors = [
             {id: 1, name: "Red", hex: "#FF0000"},
             {id: 2, name: "Blue", hex: "#0000FF"},
@@ -981,83 +1012,101 @@
             return { checked, total };
         }
 
-        /* --- AUTOMATISCHER INGAME SCREENSHOT AUTO-SCAN (OCR) --- */
-        async function runAutoScan(event) {
+        /* --- KI SCAN MIT ZWISCHENSCHRITT --- */
+        async function runAiScan(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            alert("Analysiere Screenshot... Bitte einen Moment Geduld.");
-            try {
-                const worker = await Tesseract.createWorker('eng');
-                const ret = await worker.recognize(file);
-                await worker.terminate();
+            alert("Analysiere Bild mit KI... Bitte einen Moment Geduld.");
 
-                const text = ret.data.text;
-                console.log("OCR Erkannt:", text);
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64Image = e.target.result.split(',')[1];
 
-                // Versuche Dino-Namen im Text zu finden (z.B. "Pyromane", "Therizinosaurus")
-                let detectedDinoName = selectedDino;
-                if (!detectedDinoName) {
-                    for (let d of dinos) {
-                        if (text.toLowerCase().includes(d.name.toLowerCase())) {
-                            detectedDinoName = d.name;
-                            break;
-                        }
+                const promptText = `Analyze this ARK: Survival Evolved dino stat screen screenshot.
+Extract:
+1. The Dino Species name (e.g., Pyromane, Therizinosaur, Rex, Giga).
+2. The 6 Color Region IDs displayed in the colored squares/numbers near the bottom (Region 0 to Region 5). If empty or 0, return 0.
+
+Respond strictly in valid JSON format with no extra markdown formatting:
+{
+  "dino": "DinoName",
+  "regions": [ID_R0, ID_R1, ID_R2, ID_R3, ID_R4, ID_R5]
+}`;
+
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: promptText },
+                                    { inline_data: { mime_type: file.type || "image/jpeg", data: base64Image } }
+                                ]
+                            }]
+                        })
+                    });
+
+                    const data = await response.json();
+                    let rawText = data.candidates[0].content.parts[0].text;
+                    rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+                    const parsed = JSON.parse(rawText);
+                    
+                    // Schließe das Add-Dino Modal und öffne den Bestätigungs-Zwischenschritt
+                    document.getElementById('dinoModal').style.display = 'none';
+                    
+                    document.getElementById('confirmDinoName').value = parsed.dino || "Pyromane";
+                    const regions = parsed.regions || [0,0,0,0,0,0];
+                    for(let i=0; i<6; i++) {
+                        document.getElementById(`confR${i}`).value = regions[i] !== undefined ? regions[i] : 0;
                     }
+
+                    document.getElementById('scanConfirmModal').style.display = 'flex';
+
+                } catch (err) {
+                    console.error(err);
+                    alert("Fehler bei der KI-Bildanalyse. Bitte versuche es erneut.");
                 }
-
-                // Extrahiere alle Zahlen aus dem Text
-                const matches = text.match(/\d+/g);
-                if (!matches || matches.length < 6) {
-                    alert("Konnte keine Farb-ID-Reihe im Bild finden. Bitte versuche ein direkteres Foto vom Ingame-Menü.");
-                    return;
-                }
-
-                // Die letzten 6 erkannten Zahlen im HUD entsprechen meist den Regionen R0-R5
-                const colorIds = matches.slice(-6).map(n => parseInt(n));
-
-                // Prüfen ob IDs gültig sind (1 bis 100)
-                const validIds = colorIds.every(id => id >= 1 && id <= 100);
-                if (!validIds) {
-                    alert("Die erkannten Zahlen entsprechen keinem gültigen ARK-Farb-Schema. Erkannte Werte: " + colorIds.join(', '));
-                    return;
-                }
-
-                if (!detectedDinoName) {
-                    detectedDinoName = prompt("Kein Dino-Name im Bild erkannt. Für welchen Dino sollen diese Farben gespeichert werden?", "Pyromane");
-                }
-                if (!detectedDinoName) return;
-
-                // Dino anlegen falls nicht existent
-                let d = dinos.find(x => x.name.toLowerCase() === detectedDinoName.toLowerCase());
-                if (!d) {
-                    d = { name: detectedDinoName, regions: [0,1,2,3,4,5] };
-                    dinos.push(d);
-                    localStorage.setItem('ark_tracker_dinos', JSON.stringify(dinos));
-                }
-
-                selectedDino = d.name;
-                document.getElementById('dinoSearchInput').value = d.name;
-
-                const targetKey = `dino_${d.name}`;
-                if (!state[targetKey]) state[targetKey] = {};
-
-                // Farben in den Regionen R0-R5 als abgehakt markieren
-                colorIds.forEach((colorId, regionIndex) => {
-                    if (d.regions.includes(regionIndex)) {
-                        state[targetKey][`${colorId}_${regionIndex}`] = true;
-                    }
-                });
-
-                localStorage.setItem('ark_tracker_states', JSON.stringify(state));
-                renderList();
-                alert(`Erfolgreich eingetragen für ${d.name}!\nErkannte Farben (R0-R5): ${colorIds.join(', ')}`);
-
-            } catch (err) {
-                console.error(err);
-                alert("Fehler bei der automatischen Texterkennung.");
-            }
+            };
+            reader.readAsDataURL(file);
             event.target.value = '';
+        }
+
+        function applyScanConfirmation() {
+            const dinoName = document.getElementById('confirmDinoName').value.trim();
+            if (!dinoName) return alert("Bitte gib einen Dino-Namen ein!");
+
+            let colorIds = [];
+            for(let i=0; i<6; i++) {
+                colorIds.push(parseInt(document.getElementById(`confR${i}`).value) || 0);
+            }
+
+            let d = dinos.find(x => x.name.toLowerCase() === dinoName.toLowerCase());
+            if (!d) {
+                d = { name: dinoName, regions: [0,1,2,3,4,5] };
+                dinos.push(d);
+                localStorage.setItem('ark_tracker_dinos', JSON.stringify(dinos));
+            }
+
+            selectedDino = d.name;
+            document.getElementById('dinoSearchInput').value = d.name;
+
+            const targetKey = `dino_${d.name}`;
+            if (!state[targetKey]) state[targetKey] = {};
+
+            colorIds.forEach((colorId, regionIndex) => {
+                if (d.regions.includes(regionIndex) && colorId > 0) {
+                    state[targetKey][`${colorId}_${regionIndex}`] = true;
+                }
+            });
+
+            localStorage.setItem('ark_tracker_states', JSON.stringify(state));
+            renderList();
+            
+            document.getElementById('scanConfirmModal').style.display = 'none';
+            alert(`Erfolgreich übernommen für ${d.name}!\nGespeicherte Farben (R0-R5): ${colorIds.join(', ')}`);
         }
 
         function renderList() {
